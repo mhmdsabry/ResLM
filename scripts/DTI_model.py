@@ -34,23 +34,30 @@ class query_block(nn.Module):
 		input_size = config.query_block_recurrent_input_size
 		hidden_size = config.query_block_recurrent_hidden_size 
 		num_layers  = config.query_block_recurrent_num_layers
+		recurrent_in_dim = config.query_block_recurrent_read_dim
+		recurrent_out_dim = config.query_block_recurrent_write_dim
 		self.Is_Recurrent = config.Is_Recurrent
         
 		if self.Is_Recurrent:
-			self.rnn = nn.RNN(input_size, hidden_size, num_layers,dropout=config.query_block_pdrop)   
+			self.in_layer = nn.Linear(recurrent_in_dim, recurrent_out_dim)
+			self.rnn = nn.RNN(input_size, hidden_size, num_layers)
+			self.out_layer = nn.Linear(recurrent_out_dim, recurrent_in_dim)
 		else:
 			self.conv1d = nn.Conv1d(in_dim, out_dim, kernel_size, stride=stride, padding=padding)
 			self.relu = nn.ReLU()
-			self.dropout = nn.Dropout(config.query_block_pdrop)
+		self.dropout = nn.Dropout(config.query_block_pdrop)
 
 	def forward(self,x):
 		if self.Is_Recurrent:
+			x = x.transpose(1,2)
+			x = self.in_layer(x).transpose(1,2) 
 			h_0 = torch.mean(x, 1, True).transpose(0,1)
 			x = x.transpose(0,1)
 			x, _ = self.rnn(x,h_0)
+			x = self.out_layer(x.permute((1,2,0)))
 		else:
 			x = self.relu(self.conv1d(x))
-			x = self.dropout(x)
+		x = self.dropout(x)
 
 		return x 
 
@@ -206,7 +213,8 @@ class DTI_model(nn.Module):
 		x = self.embed(x)
 
 		x = self.query_block_LN(x)
-		x = x + self.query_block(x).transpose(0,1)
+		x = x + self.query_block(x).transpose(1,2)
+        
 		x = self.LM_block_LN(x)
 		x = x + self.LM_block(x)
 
