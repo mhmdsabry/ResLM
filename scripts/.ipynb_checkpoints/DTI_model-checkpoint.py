@@ -50,8 +50,10 @@ class query_block(nn.Module):
 	def forward(self,x):
 		if self.Is_Recurrent:
 			x = x.transpose(1,2)
-			x = self.in_layer(x).transpose(1,2) 
-			h_0 = torch.mean(x, 1, True).transpose(0,1)
+			x = self.in_layer(x).transpose(1,2)
+			x_mean = torch.mean(x, 1, True).transpose(0,1)
+			x_var = torch.var(x, 1, unbiased=False).unsqueeze(dim=0)
+			h_0 = torch.stack([x_mean,x_var], dim=0).squeeze(dim=1)
 			x = x.transpose(0,1)
 			x, _ = self.rnn(x,h_0)
 			x = self.out_layer(x.permute((1,2,0)))
