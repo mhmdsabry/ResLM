@@ -149,6 +149,7 @@ class Trainer:
 
 		with open(f'{self.config.ckpt_path}_{self.config.max_epoch}epoch_train_state.json', 'w') as fp:
 			json.dump(train_state, fp)
+		self.saving_checkpoints(f"_{self.config.max_epoch}epoch_last_model")
 
 
 
