@@ -183,7 +183,7 @@ class DTI_model(nn.Module):
 		no_decay = set()
 
 		blacklist_modules = (nn.LayerNorm, nn.GroupNorm, nn.Embedding)
-		whitelist_modules = (nn.Linear, nn.Conv1d,nn.RNN)
+		whitelist_modules = (nn.Linear, nn.Conv1d)
 
 		for mn, m in self.named_modules():
 			for pn, p in m.named_parameters():
@@ -213,7 +213,7 @@ class DTI_model(nn.Module):
 		b, t = x.size()
 
 		x = self.embed(x)
-
+        
 		x = self.query_block_LN(x)
 		x = x + self.query_block(x).transpose(1,2)
         
