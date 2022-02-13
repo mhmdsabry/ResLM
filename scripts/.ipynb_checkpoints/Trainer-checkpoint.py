@@ -16,7 +16,7 @@ import torch.nn as nn
 from torch.utils.data.distributed import DistributedSampler
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
 
-from transformers import get_linear_schedule_with_warmup, get_cosine_schedule_with_warmup, get_cosine_with_hard_restarts_schedule_with_warmup
+from transformers import get_linear_schedule_with_warmup, get_cosine_schedule_with_warmup
 # -
 
 logger = logging.getLogger(__name__)
@@ -111,14 +111,8 @@ class Trainer:
 				num_warmup_steps=self.config.warmup_steps*num_train_steps,
 				num_training_steps=num_train_steps
 				)
-		elif self.config.lr_scheduler == 'cosine_hardstart':
-			scheduler = get_cosine_with_hard_restarts_schedule_with_warmup(
-				optimizer,
-				num_warmup_steps=self.config.warmup_steps*num_train_steps,
-				num_training_steps=num_train_steps
-				)
 		else:
-			logger.info("We currently support only linear, cosine, cosine_hardstart scheduler,We set any other scheduler type to None")
+			logger.info("We currently support only linear and cosine scheduler,We set any other scheduler type to None")
 			scheduler=None
             
 		train_sampler = DistributedSampler(
