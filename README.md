@@ -7,7 +7,7 @@ Querying a Language model in a residual path for drug-target interaction task
 * **Assets folder**: Where you will find the results of trainig(train_state ,learning_curve) and testing(evaluation_metrics).
 
 ### Compute:
-* TPU v3-8
+* TPU v3-8 (Provided by TPU Research Cloud Program)
 
 ### Dataset:
 * KIBA dataset: https://drive.google.com/drive/folders/1H92GKlu0Z6WFu9__ui1Ecwmq5nCMMk-Q?usp=sharing 
