@@ -6,6 +6,11 @@ Querying a Language model in a residual path for drug-target interaction task
 * **Scripts folder**: Where you will find model skeleton used, training script, testing script, config files of hyperparameters.
 * **Assets folder**: Where you will find the results of trainig(train_state ,learning_curve) and testing(evaluation_metrics).
 
+### Compute:
+* TPU v3-8
+
+### Dataset:
+* KIBA dataset: https://drive.google.com/drive/folders/1H92GKlu0Z6WFu9__ui1Ecwmq5nCMMk-Q?usp=sharing 
 
 ### ResLM Architecture:
 
