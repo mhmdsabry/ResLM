@@ -14,9 +14,9 @@ Querying a Language model in a residual path for drug-target interaction task
 * KIBA dataset: https://drive.google.com/drive/folders/1H92GKlu0Z6WFu9__ui1Ecwmq5nCMMk-Q?usp=sharing 
 
 ### Evaluation Metrics:
-* Mean Squared Error(MSE): It's the typical loss function.
-* Concordance Index(CI): Gives us the probability of the predicted KIBA interaction scores of two randomly chosen drug-target pairs, are in the correct order. This means if the reference KIBA score of one is greater than the other, this order should be preserved in the predicted scores of the two.
-* Area Under the Precision-Recall Curve(AUPR): Binary classification metric, here we transform the regression interaction KIBA scores to binary labels using
+* **Mean Squared Error(MSE)**: It's the typical loss function.
+* **Concordance Index(CI)**: Gives us the probability of the predicted KIBA interaction scores of two randomly chosen drug-target pairs, are in the correct order. This means if the reference KIBA score of one is greater than the other, this order should be preserved in the predicted scores of the two.
+* **Area Under the Precision-Recall Curve(AUPR)**: Binary classification metric, here we transform the regression interaction KIBA scores to binary labels using
 threshold values in related work. This threshold is 12.1 KIBA score, any drug-target pair with KIBA score greater or equal to this threshold are marked as there is binding between the pair, other than that as no-binding.
 
 ### ResLM Architecture:
