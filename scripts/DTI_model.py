@@ -112,8 +112,9 @@ class LM_block(nn.Module):
 				self.lm  = BertModel.from_pretrained('bert-base-uncased')
 
 				# freeze all parameters except the layernorm and positional embeddings
+				# 'bias', 'LayerNorm', 'position_embeddings'
 				for name, param in self.lm.named_parameters():
-					if 'position_embeddings' in name or 'LayerNorm' in name:
+					if 'bias' in name:
 						param.requires_grad = True 
 					else:
 						param.requires_grad = False
@@ -155,7 +156,7 @@ class DTI_model(nn.Module):
 			self.head_LN = nn.LayerNorm(768)
 			self.head = nn.Linear(768, 1, bias=False)
 
-			self.apply(self._init_weights)
+			#self.apply(self._init_weights), found that this will modify lm parameters, stupid mistakes!!
 		else:
 			print("Please choose LM in model config to be either GPT2, T5, mBert, or Bert")
 
@@ -183,7 +184,7 @@ class DTI_model(nn.Module):
 		no_decay = set()
 
 		blacklist_modules = (nn.LayerNorm, nn.GroupNorm, nn.Embedding)
-		whitelist_modules = (nn.Linear, nn.Conv1d)
+		whitelist_modules = (nn.Linear, nn.Conv1d, nn.RNN)
 
 		for mn, m in self.named_modules():
 			for pn, p in m.named_parameters():
