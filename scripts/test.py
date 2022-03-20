@@ -40,6 +40,7 @@ batch_size = int(config['training_config']['eval_batch_size'])
 ckpt_path = config['training_config']['ckpt_path']
 max_epoch = int(config['training_config']['max_epoch'])
 TPU = config['training_config']['TPU']
+measure_LM_contribution = config['training_config']['measure_LM_contribution']
 
 from DTI_model import DTI_model, modelConfig
 
@@ -86,7 +87,8 @@ test_config = TesterConfig(
 							num_workers = num_workers,
 							batch_size = batch_size,
 							max_epoch = max_epoch,
-							ckpt_path = ckpt_path
+							ckpt_path = ckpt_path,
+							measure_LM_contribution= measure_LM_contribution
 							)
 
 tester = Tester(model, kiba_test, test_config)

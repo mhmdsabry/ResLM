@@ -2,8 +2,12 @@ import math
 import logging
 import json
 
+# +
 from tqdm import tqdm 
 import numpy as np 
+
+import optuna
+# -
 
 import torch_xla
 import torch_xla.core.xla_model as xm
@@ -34,11 +38,22 @@ class TrainerConfig:
 			setattr(self,k,v)
 
 class Trainer:
-	def __init__(self, model, trainset, evalset, train_config):
+	def __init__(self, model, trainset, evalset, train_config, hp_params=None):
 		self.model = model
 		self.trainset = trainset
 		self.evalset = evalset
 		self.config = train_config
+		if hp_params is not None:
+			self.hp_params = hp_params
+		else:
+			#set these parameters to the ones pre-defined in the config file, if you don't want hyperparameter tuning
+			self.hp_params = {'learning_rate': train_config.learning_rate,
+								'lr_scheduler': train_config.lr_scheduler,
+								'warmup_steps': train_config.warmup_steps,
+								'weight_decay': train_config.weight_decay,
+								'betas_1': train_config.betas_1, 
+								'betas_2': train_config.betas_2
+								} 
 
 	def saving_checkpoints(self,timeline):
 		model = self.model.module if hasattr(self.model, "module") else self.model
@@ -95,26 +110,26 @@ class Trainer:
 
 		device = xm.xla_device()
 		model = self.model.to(device)
-		optimizer = model.configure_optimizers(self.config)
+		optimizer = model.configure_optimizers(self.hp_params)
         
 		num_train_steps = int(len(self.trainset) / self.config.train_batch_size / xm.xrt_world_size() * self.config.max_epoch)
         
-		if self.config.lr_scheduler == 'linear':
+		if self.hp_params['lr_scheduler'] == 'linear':
 			scheduler = get_linear_schedule_with_warmup(
 				optimizer,
-				num_warmup_steps=self.config.warmup_steps*num_train_steps,
+				num_warmup_steps=self.hp_params['warmup_steps']*num_train_steps,
 				num_training_steps=num_train_steps
 				)
-		elif self.config.lr_scheduler == 'cosine':
+		elif self.hp_params['lr_scheduler'] == 'cosine':
 			scheduler = get_cosine_schedule_with_warmup(
 				optimizer,
-				num_warmup_steps=self.config.warmup_steps*num_train_steps,
+				num_warmup_steps=self.hp_params['warmup_steps']*num_train_steps,
 				num_training_steps=num_train_steps
 				)
-		elif self.config.lr_scheduler == 'cosine_hardstart':
+		elif self.hp_params['lr_scheduler'] == 'cosine_hardstart':
 			scheduler = get_cosine_with_hard_restarts_schedule_with_warmup(
 				optimizer,
-				num_warmup_steps=self.config.warmup_steps*num_train_steps,
+				num_warmup_steps=self.hp_params['warmup_steps']*num_train_steps,
 				num_training_steps=num_train_steps
 				)
 		else:
@@ -164,10 +179,13 @@ class Trainer:
 				best_loss = eval_loss
 				train_state['best_loss'] = best_loss
 				self.saving_checkpoints(f"_{self.config.max_epoch}epoch_best_model")
-
+                
 		with open(f'{self.config.ckpt_path}_{self.config.max_epoch}epoch_train_state.json', 'w') as fp:
 			json.dump(train_state, fp)
 		self.saving_checkpoints(f"_{self.config.max_epoch}epoch_last_model")
+        
+		if self.hp_params is not None:
+			return best_loss #for optuna hyperparameter tuning        
 
 
 

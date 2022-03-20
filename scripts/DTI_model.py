@@ -114,7 +114,7 @@ class LM_block(nn.Module):
 				# freeze all parameters except the layernorm and positional embeddings
 				# 'bias', 'LayerNorm', 'position_embeddings'
 				for name, param in self.lm.named_parameters():
-					if 'bias' in name:
+					if 'position_embeddings' in name or 'LayerNorm' in name:
 						param.requires_grad = True 
 					else:
 						param.requires_grad = False
@@ -156,7 +156,17 @@ class DTI_model(nn.Module):
 			self.head_LN = nn.LayerNorm(768)
 			self.head = nn.Linear(768, 1, bias=False)
 
+			"""
+			Executing (apply weights) rewrite the pre-trained language model weights and initialize them to random weights,
+			didn't notice this mistake until late, so previous experiments,
+			from the beginning till the experiments before the frozen modes experiments all were with apply weight init.
+			Frozen modes experiment is with the language model weights.
+			We will conduct one experiment with the same configuration as one of the weight init experiments to see the differences,
+			as this will require further investigation, if init weights and LM have the same effect many factors can affect this conclusion.
+			For now, we will focus on our experiments with LM
+			"""
 			#self.apply(self._init_weights), found that this will modify lm parameters, stupid mistakes!!
+            
 		else:
 			print("Please choose LM in model config to be either GPT2, T5, mBert, or Bert")
 
@@ -172,13 +182,12 @@ class DTI_model(nn.Module):
 			module.bias.data.zero_()
 			module.weight.data.fill_(1.0)
 
-	def configure_optimizers(self, train_config):
+	def configure_optimizers(self, hp_params):
 
 		"""
 		Here we will seperate the parameters into two subsets, one will experience weight decay
 		and the other won't (layernorm, embedding weights and biases)
 		we then return pytorch optimizer
-
 		"""
 		decay = set()
 		no_decay = set()
@@ -204,10 +213,10 @@ class DTI_model(nn.Module):
 		assert len(inter_params) == 0, "Parameters %s are in decay/no_decay sets!"%(str(union_params))
 
 		optim_group = [
-			{"params":[params_dict[pn] for pn in sorted(list(decay))], "weight_decay":train_config.weight_decay},
+			{"params":[params_dict[pn] for pn in sorted(list(decay))], "weight_decay":hp_params['weight_decay']},
 			{"params":[params_dict[pn] for pn in sorted(list(no_decay))], "weight_decay":0.0}
 		]
-		optimizer = torch.optim.AdamW(optim_group, lr=train_config.learning_rate, betas=(train_config.betas_1,train_config.betas_2))
+		optimizer = torch.optim.AdamW(optim_group, lr=hp_params['learning_rate'], betas=(hp_params['betas_1'],hp_params['betas_2']))
 		return optimizer
 
 	def forward(self, x, targets):

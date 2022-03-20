@@ -1,5 +1,6 @@
 import configparser
 import argparse 
+import optuna
 
 import logging
 logging.basicConfig(
@@ -79,6 +80,8 @@ weight_decay = float(config['training_config']['weight_decay'])
 betas_1= float(config['training_config']['betas_1'])
 betas_2= float(config['training_config']['betas_2'])
 TPU = config['training_config']['TPU']
+hp_optuna = config['training_config']['hp_optuna']
+optuna_trial = int(config['training_config']['optuna_trial'])
 
 #prepare model
 model_config = modelConfig(
@@ -118,16 +121,39 @@ train_config = TrainerConfig(
 							TPU = TPU,
 							)
 
-trainer = Trainer(model, kiba_train, kiba_eval, train_config)
+
+#hyperparameter tuning using optuna:
+def hp_tuner(trial):
+	hp_params = {
+		'learning_rate': trial.suggest_loguniform('learning_rate', 3e-4, 5e-4),
+		'lr_scheduler': trial.suggest_categorical('lr_scheduler', ['linear','cosine']),
+		'warmup_steps': trial.suggest_float('warmup_steps', 0.2, 0.9),
+		'weight_decay': trial.suggest_float('weight_decay', 0.2, 1.5),
+		'betas_1': trial.suggest_float('betas_1',0.95,0.99), 
+		'betas_2': trial.suggest_float('betas_2',0.95, 0.99)
+	}
+	trainer = Trainer(model, kiba_train, kiba_eval, train_config, hp_params)
+	loss = trainer.train()
+	return loss
+
 
 def _map_fn(index):
 	# For xla_spawn (TPUs)
-	trainer.train()
+	if hp_optuna is True:
+		study = optuna.create_study(direction="minimize", sampler=optuna.samplers.TPESampler())
+		study.optimize(hp_tuner, n_trials=optuna_trial)
+		best_trial = study.best_trial
+		for key, value in best_trial.params.items():
+			print("{}: {}".format(key, value))
+	else:
+		trainer = Trainer(model, kiba_train, kiba_eval, train_config)
+		trainer.train()
 
 if __name__ == "__main__":
 	if TPU:
 		xmp.spawn(_map_fn, args=(), nprocs=num_workers,start_method='fork')
 	else:
+		trainer = Trainer(model, kiba_train, kiba_eval, train_config)
 		trainer.train()
 
 
